@@ -19,7 +19,7 @@ export default function LoginPage() {
           href="/signup"
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
-          Create an account
+          Create an Account
         </Link>
       </p>
     </AuthShell>

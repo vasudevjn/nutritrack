@@ -77,7 +77,7 @@ export function WaterTracker({
       <Progress value={pct} className="mb-3 h-2.5" />
       {isError ? (
         <Button type="button" variant="secondary" size="sm" className="w-full" onClick={() => void refetch()}>
-          Retry loading water
+          Retry Loading Water
         </Button>
       ) : (
         <div className="grid grid-cols-2 gap-2">

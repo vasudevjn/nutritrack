@@ -77,7 +77,7 @@ export function MagicLinkForm({ mode = "signin" }: { mode?: "signin" | "signup" 
             className="text-muted-foreground hover:text-foreground"
             onClick={() => setStep("email")}
           >
-            Use a different email
+            Use a Different Email
           </button>
           <button
             type="button"
@@ -85,7 +85,7 @@ export function MagicLinkForm({ mode = "signin" }: { mode?: "signin" | "signup" 
             disabled={loading}
             onClick={() => void sendMagicLink(false)}
           >
-            {loading ? "Sending…" : "Resend link"}
+            {loading ? "Sending…" : "Resend Link"}
           </button>
         </div>
       </div>
@@ -114,7 +114,7 @@ export function MagicLinkForm({ mode = "signin" }: { mode?: "signin" | "signup" 
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading || !email.trim()}>
-        {loading ? "Sending…" : "Email me a sign-in link"}
+        {loading ? "Sending…" : "Email Me a Sign-In Link"}
       </Button>
     </form>
   );

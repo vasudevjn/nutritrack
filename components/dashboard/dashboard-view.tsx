@@ -47,7 +47,7 @@ export function DashboardView() {
         </div>
         <Link href="/log" className={cn(buttonVariants(), "inline-flex gap-1.5")}>
           <Plus className="size-4" />
-          Log meal
+          Log Meal
         </Link>
       </header>
 

@@ -21,6 +21,13 @@ import {
 } from "@/components/ui/select";
 import type { Meal, MealType, ParsedMealItem } from "@/types/database";
 
+const MEAL_TYPE_ITEMS = [
+  { value: "breakfast", label: "Breakfast" },
+  { value: "lunch", label: "Lunch" },
+  { value: "dinner", label: "Dinner" },
+  { value: "snack", label: "Snack" },
+] as const;
+
 export function MealEditDialog({
   meal,
   date,
@@ -87,23 +94,25 @@ export function MealEditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] w-full max-w-3xl overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="font-heading">Edit meal</DialogTitle>
+          <DialogTitle className="font-heading">Edit Meal</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Meal type</Label>
+            <Label>Meal Type</Label>
             <Select
+              items={[...MEAL_TYPE_ITEMS]}
               value={mealType}
               onValueChange={(v) => setMealType((v as MealType) || "lunch")}
             >
               <SelectTrigger className="w-full sm:w-56">
-                <SelectValue />
+                <SelectValue placeholder="Select Meal Type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="breakfast">Breakfast</SelectItem>
-                <SelectItem value="lunch">Lunch</SelectItem>
-                <SelectItem value="dinner">Dinner</SelectItem>
-                <SelectItem value="snack">Snack</SelectItem>
+                {MEAL_TYPE_ITEMS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -113,7 +122,7 @@ export function MealEditDialog({
             disabled={save.isPending || !items.some((i) => i.name.trim())}
             onClick={() => save.mutate()}
           >
-            {save.isPending ? "Saving…" : "Save changes"}
+            {save.isPending ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </DialogContent>

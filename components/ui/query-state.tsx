@@ -15,7 +15,7 @@ export function QueryError({
       <p className="text-sm font-medium text-destructive">{message}</p>
       {onRetry && (
         <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={onRetry}>
-          Try again
+          Try Again
         </Button>
       )}
     </div>

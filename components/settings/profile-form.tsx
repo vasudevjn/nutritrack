@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ActivitySelect } from "@/components/ui/activity-select";
 import {
   Select,
   SelectContent,
@@ -17,8 +18,13 @@ import {
 import { QueryError } from "@/components/ui/query-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
-import { ACTIVITY_OPTIONS } from "@/lib/nutrition";
 import type { Profile, Sex } from "@/types/database";
+
+const SEX_ITEMS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+] as const;
 
 async function fetchProfile() {
   const res = await fetch("/api/profile");
@@ -108,14 +114,20 @@ export function ProfileForm() {
         </div>
         <div className="space-y-2">
           <Label>Sex</Label>
-          <Select value={sex} onValueChange={(v) => setSex((v as Sex) || "male")}>
+          <Select
+            items={[...SEX_ITEMS]}
+            value={sex}
+            onValueChange={(v) => setSex((v as Sex) || "male")}
+          >
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue placeholder="Select Sex" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="male">Male</SelectItem>
-              <SelectItem value="female">Female</SelectItem>
-              <SelectItem value="other">Other</SelectItem>
+              {SEX_ITEMS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -140,30 +152,16 @@ export function ProfileForm() {
           />
         </div>
         <div className="space-y-2">
-          <Label>Activity level</Label>
-          <Select
-            value={String(activity)}
-            onValueChange={(v) => setActivity(Number(v))}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ACTIVITY_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={String(opt.value)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Label>Activity Level</Label>
+          <ActivitySelect value={activity} onChange={setActivity} />
         </div>
         <Button type="submit" disabled={save.isPending}>
-          {save.isPending ? "Saving…" : "Save profile"}
+          {save.isPending ? "Saving…" : "Save Profile"}
         </Button>
       </form>
 
       <Button type="button" variant="outline" onClick={signOut}>
-        Sign out
+        Sign Out
       </Button>
     </div>
   );

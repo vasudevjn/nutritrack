@@ -19,7 +19,7 @@ export default function SignupPage() {
           href="/login"
           className="font-medium text-primary underline-offset-4 hover:underline"
         >
-          Sign in
+          Sign In
         </Link>
       </p>
     </AuthShell>

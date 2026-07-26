@@ -57,7 +57,7 @@ export function HistoryView() {
             className={cn(buttonVariants(), "inline-flex gap-1.5")}
           >
             <Plus className="size-4" />
-            Log for day
+            Log for Day
           </Link>
         </div>
       </header>

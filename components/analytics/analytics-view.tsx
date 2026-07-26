@@ -86,7 +86,7 @@ export function AnalyticsView() {
             variant={range === "7d" ? "default" : "secondary"}
             onClick={() => setRange("7d")}
           >
-            7 days
+            7 Days
           </Button>
           <Button
             type="button"
@@ -94,7 +94,7 @@ export function AnalyticsView() {
             variant={range === "30d" ? "default" : "secondary"}
             onClick={() => setRange("30d")}
           >
-            30 days
+            30 Days
           </Button>
         </div>
       </header>

@@ -142,7 +142,7 @@ export function NutritionPreview({
           onClick={() => onChange([...items, emptyItem()])}
         >
           <Plus className="size-4" />
-          Add item
+          Add Item
         </Button>
         <div className="rounded-xl bg-secondary/70 px-4 py-2 text-sm tabular-nums">
           <span className="font-medium">Totals:</span> {totals.calories} kcal · Protein{" "}

@@ -19,6 +19,13 @@ import {
 import { todayISO } from "@/lib/dates";
 import type { MealType, ParsedMealItem } from "@/types/database";
 
+const MEAL_TYPE_ITEMS = [
+  { value: "breakfast", label: "Breakfast" },
+  { value: "lunch", label: "Lunch" },
+  { value: "dinner", label: "Dinner" },
+  { value: "snack", label: "Snack" },
+] as const;
+
 function MealLogFormInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -114,16 +121,21 @@ function MealLogFormInner() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label>Meal type</Label>
-          <Select value={mealType} onValueChange={(v) => setMealType((v as MealType) || "lunch")}>
+          <Label>Meal Type</Label>
+          <Select
+            items={[...MEAL_TYPE_ITEMS]}
+            value={mealType}
+            onValueChange={(v) => setMealType((v as MealType) || "lunch")}
+          >
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue placeholder="Select Meal Type" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="breakfast">Breakfast</SelectItem>
-              <SelectItem value="lunch">Lunch</SelectItem>
-              <SelectItem value="dinner">Dinner</SelectItem>
-              <SelectItem value="snack">Snack</SelectItem>
+              {MEAL_TYPE_ITEMS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  {opt.label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -148,14 +160,14 @@ function MealLogFormInner() {
           {parseMutation.isPending ? "Estimating…" : "Estimate with AI"}
         </Button>
         <Button type="button" variant="secondary" onClick={startManual}>
-          Enter manually
+          Enter Manually
         </Button>
       </div>
 
       {items && (
         <div className="space-y-4">
           <div>
-            <h2 className="font-heading text-xl">Nutrition preview</h2>
+            <h2 className="font-heading text-xl">Nutrition Preview</h2>
             <p className="text-sm text-muted-foreground">
               Edit any values before saving.
             </p>
@@ -167,7 +179,7 @@ function MealLogFormInner() {
             disabled={!items.some((i) => i.name.trim()) || saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
           >
-            {saveMutation.isPending ? "Saving…" : "Save meal"}
+            {saveMutation.isPending ? "Saving…" : "Save Meal"}
           </Button>
         </div>
       )}

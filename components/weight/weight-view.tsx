@@ -121,7 +121,7 @@ export function WeightView() {
           />
         </div>
         <Button type="submit" disabled={add.isPending} className="sm:col-span-2">
-          {add.isPending ? "Saving…" : "Log weight"}
+          {add.isPending ? "Saving…" : "Log Weight"}
         </Button>
       </form>
 
