@@ -7,7 +7,7 @@ NutriTrack is a modern web app for everyday diet tracking. Describe what you ate
 ## Features
 
 - **Magic-link sign-in** — passwordless email auth; stay signed in until you sign out
-- **Smart onboarding** — profile setup with calorie and macro goal suggestions (Mifflin–St Jeor)
+- **Smart onboarding & goals** — maintenance, deficit, or surplus with adjustable kg/week rate (Mifflin–St Jeor)
 - **Today dashboard** — calorie ring, protein/carbs/fat progress, water intake, and meals
 - **AI meal logging** — natural-language parse with an editable nutrition preview, plus manual entry
 - **History** — browse any day and log meals for past dates

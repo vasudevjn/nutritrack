@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { CaloriePlanFields } from "@/components/goals/calorie-plan-fields";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ActivitySelect } from "@/components/ui/activity-select";
 import {
   Select,
   SelectContent,
@@ -14,8 +16,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ACTIVITY_OPTIONS, ageFromBirthdate, suggestGoals } from "@/lib/nutrition";
-import type { Sex } from "@/types/database";
+import { ageFromBirthdate, macrosFromCalories, suggestGoals } from "@/lib/nutrition";
+import type { CalorieGoalType, Sex } from "@/types/database";
+
+const SEX_ITEMS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+  { value: "other", label: "Other" },
+] as const;
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -29,6 +37,16 @@ export default function OnboardingPage() {
   const [birthdate, setBirthdate] = useState("1998-01-01");
   const [activity, setActivity] = useState(1.55);
 
+  const [goalType, setGoalType] = useState<CalorieGoalType>("deficit");
+  const [weeklyKg, setWeeklyKg] = useState(0.5);
+  const [calorieTarget, setCalorieTarget] = useState(2000);
+  const [proteinG, setProteinG] = useState(150);
+  const [carbsG, setCarbsG] = useState(200);
+  const [fatG, setFatG] = useState(65);
+  const [waterMl, setWaterMl] = useState(2500);
+  const [weightTarget, setWeightTarget] = useState(70);
+  const [manualCalories, setManualCalories] = useState(false);
+
   const suggested = useMemo(
     () =>
       suggestGoals({
@@ -37,22 +55,26 @@ export default function OnboardingPage() {
         heightCm,
         age: ageFromBirthdate(birthdate),
         activityLevel: activity,
+        goalType,
+        weeklyWeightChangeKg: weeklyKg,
       }),
-    [sex, weightKg, heightCm, birthdate, activity],
+    [sex, weightKg, heightCm, birthdate, activity, goalType, weeklyKg],
   );
 
-  const [calorieTarget, setCalorieTarget] = useState<number | null>(null);
-  const [proteinG, setProteinG] = useState<number | null>(null);
-  const [carbsG, setCarbsG] = useState<number | null>(null);
-  const [fatG, setFatG] = useState<number | null>(null);
-  const [waterMl, setWaterMl] = useState<number | null>(null);
-  const [weightTarget, setWeightTarget] = useState<number | null>(null);
+  useEffect(() => {
+    if (step !== 2 || manualCalories) return;
+    setCalorieTarget(suggested.calorie_target);
+    setProteinG(suggested.protein_g);
+    setCarbsG(suggested.carbs_g);
+    setFatG(suggested.fat_g);
+  }, [suggested, step, manualCalories]);
 
   function goToGoals() {
     if (!fullName.trim()) {
       toast.error("Please enter your name");
       return;
     }
+    setManualCalories(false);
     setCalorieTarget(suggested.calorie_target);
     setProteinG(suggested.protein_g);
     setCarbsG(suggested.carbs_g);
@@ -75,12 +97,14 @@ export default function OnboardingPage() {
         weight_kg: weightKg,
         birthdate,
         activity_level: activity,
-        calorie_target: calorieTarget ?? suggested.calorie_target,
-        protein_g: proteinG ?? suggested.protein_g,
-        carbs_g: carbsG ?? suggested.carbs_g,
-        fat_g: fatG ?? suggested.fat_g,
-        water_ml: waterMl ?? suggested.water_ml,
-        weight_target_kg: weightTarget ?? suggested.weight_target_kg,
+        calorie_goal_type: goalType,
+        weekly_weight_change_kg: goalType === "maintenance" ? 0 : weeklyKg,
+        calorie_target: calorieTarget,
+        protein_g: proteinG,
+        carbs_g: carbsG,
+        fat_g: fatG,
+        water_ml: waterMl,
+        weight_target_kg: weightTarget,
       }),
     });
     const data = await res.json();
@@ -98,11 +122,11 @@ export default function OnboardingPage() {
 
   return (
     <AuthShell
-      title={step === 1 ? "Tell us about you" : "Confirm your goals"}
+      title={step === 1 ? "Tell Us About You" : "Set Your Calorie Plan"}
       subtitle={
         step === 1
           ? "We'll estimate calorie and macro targets you can edit anytime."
-          : "Based on Mifflin–St Jeor. Adjust anything before continuing."
+          : "Choose maintenance, a deficit, or a surplus based on weekly kg change."
       }
     >
       {step === 1 ? (
@@ -118,14 +142,20 @@ export default function OnboardingPage() {
           </div>
           <div className="space-y-2">
             <Label>Sex</Label>
-            <Select value={sex} onValueChange={(v) => setSex(v as Sex)}>
+            <Select
+              items={[...SEX_ITEMS]}
+              value={sex}
+              onValueChange={(v) => setSex((v as Sex) || "male")}
+            >
               <SelectTrigger className="w-full">
-                <SelectValue />
+                <SelectValue placeholder="Select Sex" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
+                {SEX_ITEMS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -159,22 +189,8 @@ export default function OnboardingPage() {
             />
           </div>
           <div className="space-y-2">
-            <Label>Activity level</Label>
-            <Select
-              value={String(activity)}
-              onValueChange={(v) => setActivity(Number(v))}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ACTIVITY_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={String(opt.value)}>
-                    {opt.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Activity Level</Label>
+            <ActivitySelect value={activity} onChange={setActivity} />
           </div>
           <Button type="button" className="w-full" onClick={goToGoals}>
             Continue
@@ -182,28 +198,37 @@ export default function OnboardingPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          <CaloriePlanFields
+            goalType={goalType}
+            weeklyKg={weeklyKg}
+            maintenance={suggested.maintenance_calories}
+            dailyDelta={suggested.daily_calorie_delta}
+            calorieTarget={calorieTarget}
+            onGoalTypeChange={(type) => {
+              setManualCalories(false);
+              setGoalType(type);
+              if (type !== "maintenance" && weeklyKg <= 0) setWeeklyKg(0.5);
+            }}
+            onWeeklyKgChange={(kg) => {
+              setManualCalories(false);
+              setWeeklyKg(kg);
+            }}
+            onCalorieTargetChange={(calories) => {
+              setManualCalories(true);
+              setCalorieTarget(calories);
+              const macros = macrosFromCalories(calories);
+              setProteinG(macros.protein_g);
+              setCarbsG(macros.carbs_g);
+              setFatG(macros.fat_g);
+            }}
+          />
+
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Calories</Label>
-              <Input
-                type="number"
-                value={calorieTarget ?? ""}
-                onChange={(e) => setCalorieTarget(Number(e.target.value))}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Water (ml)</Label>
-              <Input
-                type="number"
-                value={waterMl ?? ""}
-                onChange={(e) => setWaterMl(Number(e.target.value))}
-              />
-            </div>
             <div className="space-y-2">
               <Label>Protein (g)</Label>
               <Input
                 type="number"
-                value={proteinG ?? ""}
+                value={proteinG}
                 onChange={(e) => setProteinG(Number(e.target.value))}
               />
             </div>
@@ -211,7 +236,7 @@ export default function OnboardingPage() {
               <Label>Carbs (g)</Label>
               <Input
                 type="number"
-                value={carbsG ?? ""}
+                value={carbsG}
                 onChange={(e) => setCarbsG(Number(e.target.value))}
               />
             </div>
@@ -219,19 +244,28 @@ export default function OnboardingPage() {
               <Label>Fat (g)</Label>
               <Input
                 type="number"
-                value={fatG ?? ""}
+                value={fatG}
                 onChange={(e) => setFatG(Number(e.target.value))}
               />
             </div>
             <div className="space-y-2">
-              <Label>Weight goal (kg)</Label>
+              <Label>Water (ml)</Label>
               <Input
                 type="number"
-                value={weightTarget ?? ""}
+                value={waterMl}
+                onChange={(e) => setWaterMl(Number(e.target.value))}
+              />
+            </div>
+            <div className="space-y-2 col-span-2">
+              <Label>Weight Target (kg)</Label>
+              <Input
+                type="number"
+                value={weightTarget}
                 onChange={(e) => setWeightTarget(Number(e.target.value))}
               />
             </div>
           </div>
+
           <div className="flex gap-2">
             <Button type="button" variant="secondary" className="flex-1" onClick={() => setStep(1)}>
               Back

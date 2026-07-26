@@ -1,5 +1,6 @@
 export type Sex = "male" | "female" | "other";
 export type MealType = "breakfast" | "lunch" | "dinner" | "snack";
+export type CalorieGoalType = "maintenance" | "deficit" | "surplus";
 
 export interface Profile {
   id: string;
@@ -21,6 +22,8 @@ export interface Goals {
   fat_g: number;
   water_ml: number;
   weight_target_kg: number | null;
+  calorie_goal_type: CalorieGoalType;
+  weekly_weight_change_kg: number;
   updated_at: string;
 }
 

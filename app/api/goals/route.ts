@@ -44,6 +44,9 @@ export async function PUT(request: Request) {
 
     if (profileError) return jsonError(profileError.message, 500);
 
+    const weekly =
+      d.calorie_goal_type === "maintenance" ? 0 : d.weekly_weight_change_kg;
+
     const { data: goals, error: goalsError } = await supabase
       .from("goals")
       .upsert({
@@ -54,6 +57,8 @@ export async function PUT(request: Request) {
         fat_g: d.fat_g,
         water_ml: d.water_ml,
         weight_target_kg: d.weight_target_kg ?? d.weight_kg,
+        calorie_goal_type: d.calorie_goal_type,
+        weekly_weight_change_kg: weekly,
         updated_at: new Date().toISOString(),
       })
       .select("*")
@@ -74,11 +79,17 @@ export async function PUT(request: Request) {
   const parsed = goalsSchema.safeParse(body);
   if (!parsed.success) return jsonError(parsed.error.issues[0]?.message || "Invalid goals");
 
+  const weekly =
+    parsed.data.calorie_goal_type === "maintenance"
+      ? 0
+      : parsed.data.weekly_weight_change_kg;
+
   const { data, error } = await supabase
     .from("goals")
     .upsert({
       user_id: user.id,
       ...parsed.data,
+      weekly_weight_change_kg: weekly,
       updated_at: new Date().toISOString(),
     })
     .select("*")

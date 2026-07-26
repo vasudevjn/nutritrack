@@ -6,7 +6,7 @@ export default function GoalsPage() {
       <header>
         <h1 className="font-heading text-3xl tracking-tight">Goals</h1>
         <p className="mt-1 text-muted-foreground">
-          Update calorie, macro, water, and weight targets.
+          Choose maintenance, deficit, or surplus — then set how many kg per week.
         </p>
       </header>
       <GoalsForm />

@@ -4,6 +4,11 @@ export const emailSchema = z.object({
   email: z.string().email(),
 });
 
+const caloriePlanFields = {
+  calorie_goal_type: z.enum(["maintenance", "deficit", "surplus"]),
+  weekly_weight_change_kg: z.coerce.number().min(0).max(1.5),
+};
+
 export const onboardingSchema = z.object({
   full_name: z.string().min(1),
   sex: z.enum(["male", "female", "other"]),
@@ -17,6 +22,7 @@ export const onboardingSchema = z.object({
   fat_g: z.coerce.number().min(10).max(400),
   water_ml: z.coerce.number().min(500).max(10000),
   weight_target_kg: z.coerce.number().min(30).max(300).optional().nullable(),
+  ...caloriePlanFields,
 });
 
 export const goalsSchema = z.object({
@@ -26,6 +32,7 @@ export const goalsSchema = z.object({
   fat_g: z.coerce.number().min(10).max(400),
   water_ml: z.coerce.number().min(500).max(10000),
   weight_target_kg: z.coerce.number().min(30).max(300).optional().nullable(),
+  ...caloriePlanFields,
 });
 
 export const profileSchema = z.object({
