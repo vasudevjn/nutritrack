@@ -8,7 +8,7 @@ import { MacroBars } from "@/components/dashboard/macro-bars";
 import { WaterTracker } from "@/components/dashboard/water-tracker";
 import { MealList } from "@/components/meals/meal-list";
 import { buttonVariants } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError, QuerySkeletons } from "@/components/ui/query-state";
 import { formatDisplayDate, todayISO } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { Goals, Meal } from "@/types/database";
@@ -36,6 +36,7 @@ export function DashboardView() {
   const goals = goalsQuery.data?.goals;
   const totals = mealsQuery.data?.totals;
   const loading = mealsQuery.isLoading || goalsQuery.isLoading;
+  const errored = mealsQuery.isError || goalsQuery.isError;
 
   return (
     <div className="space-y-8">
@@ -50,24 +51,37 @@ export function DashboardView() {
         </Link>
       </header>
 
-      {loading || !goals || !totals ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-64 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
-        </div>
+      {errored ? (
+        <QueryError
+          message="Could not load today's dashboard"
+          onRetry={() => {
+            void mealsQuery.refetch();
+            void goalsQuery.refetch();
+          }}
+        />
+      ) : loading ? (
+        <QuerySkeletons />
+      ) : !goals ? (
+        <QueryError
+          message="No goals found. Finish onboarding or set goals first."
+          onRetry={() => void goalsQuery.refetch()}
+        />
       ) : (
         <>
           <section className="grid gap-6 md:grid-cols-[1fr_1.2fr] md:items-center">
             <div className="rounded-2xl border border-border/80 bg-card/70 p-6 backdrop-blur-sm">
-              <CalorieRing current={totals.calories} target={goals.calorie_target} />
+              <CalorieRing
+                current={totals?.calories ?? 0}
+                target={goals.calorie_target}
+              />
             </div>
             <div className="space-y-4">
               <div className="rounded-2xl border border-border/80 bg-card/70 p-5 backdrop-blur-sm">
                 <h2 className="mb-4 font-heading text-xl">Macros</h2>
                 <MacroBars
-                  protein={totals.protein_g}
-                  carbs={totals.carbs_g}
-                  fat={totals.fat_g}
+                  protein={totals?.protein_g ?? 0}
+                  carbs={totals?.carbs_g ?? 0}
+                  fat={totals?.fat_g ?? 0}
                   targets={goals}
                 />
               </div>

@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { QueryError, QuerySkeletons } from "@/components/ui/query-state";
 import type { AnalyticsDay, Goals } from "@/types/database";
 
 async function fetchAnalytics(range: "7d" | "30d") {
@@ -26,21 +26,31 @@ async function fetchAnalytics(range: "7d" | "30d") {
 function ChartCard({
   title,
   children,
+  empty,
 }: {
   title: string;
   children: React.ReactNode;
+  empty?: boolean;
 }) {
   return (
     <div className="rounded-2xl border border-border/80 bg-card/70 p-4 backdrop-blur-sm">
       <h2 className="mb-3 font-heading text-lg">{title}</h2>
-      <div className="h-56">{children}</div>
+      <div className="h-56">
+        {empty ? (
+          <div className="flex h-full items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+            No data yet for this range
+          </div>
+        ) : (
+          children
+        )}
+      </div>
     </div>
   );
 }
 
 export function AnalyticsView() {
   const [range, setRange] = useState<"7d" | "30d">("7d");
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["analytics", range],
     queryFn: () => fetchAnalytics(range),
   });
@@ -51,6 +61,10 @@ export function AnalyticsView() {
       label: d.date.slice(5),
       protein: Math.round(d.protein_g),
     })) || [];
+
+  const hasCalories = days.some((d) => d.calories > 0);
+  const hasProtein = days.some((d) => d.protein > 0);
+  const weightDays = days.filter((d) => d.weight_kg != null);
 
   return (
     <div className="space-y-6">
@@ -85,14 +99,13 @@ export function AnalyticsView() {
         </div>
       </header>
 
-      {isLoading || !data ? (
-        <div className="grid gap-4 md:grid-cols-2">
-          <Skeleton className="h-64 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
-        </div>
+      {isError ? (
+        <QueryError message="Could not load analytics" onRetry={() => void refetch()} />
+      ) : isLoading || !data ? (
+        <QuerySkeletons />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
-          <ChartCard title="Calories">
+          <ChartCard title="Calories" empty={!hasCalories}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={days}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -104,7 +117,7 @@ export function AnalyticsView() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Protein (g)">
+          <ChartCard title="Protein (g)" empty={!hasProtein}>
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={days}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -117,9 +130,9 @@ export function AnalyticsView() {
           </ChartCard>
 
           <div className="lg:col-span-2">
-            <ChartCard title="Weight (kg)">
+            <ChartCard title="Weight (kg)" empty={weightDays.length === 0}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={days.filter((d) => d.weight_kg != null)}>
+                <LineChart data={weightDays}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                   <YAxis domain={["auto", "auto"]} tick={{ fontSize: 11 }} width={40} />

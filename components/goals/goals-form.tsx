@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QueryError } from "@/components/ui/query-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Goals } from "@/types/database";
 
@@ -17,7 +18,10 @@ async function fetchGoals() {
 
 export function GoalsForm() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["goals"], queryFn: fetchGoals });
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["goals"],
+    queryFn: fetchGoals,
+  });
   const [form, setForm] = useState({
     calorie_target: 2000,
     protein_g: 150,
@@ -59,6 +63,10 @@ export function GoalsForm() {
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  if (isError) {
+    return <QueryError message="Could not load goals" onRetry={() => void refetch()} />;
+  }
 
   if (isLoading) return <Skeleton className="h-72 rounded-2xl" />;
 

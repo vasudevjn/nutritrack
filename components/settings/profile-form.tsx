@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { QueryError } from "@/components/ui/query-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { createClient } from "@/lib/supabase/client";
 import { ACTIVITY_OPTIONS } from "@/lib/nutrition";
@@ -28,7 +29,10 @@ async function fetchProfile() {
 export function ProfileForm() {
   const router = useRouter();
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["profile"], queryFn: fetchProfile });
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["profile"],
+    queryFn: fetchProfile,
+  });
   const [fullName, setFullName] = useState("");
   const [sex, setSex] = useState<Sex>("male");
   const [heightCm, setHeightCm] = useState<number | "">("");
@@ -73,6 +77,10 @@ export function ProfileForm() {
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  if (isError) {
+    return <QueryError message="Could not load profile" onRetry={() => void refetch()} />;
   }
 
   if (isLoading) return <Skeleton className="h-72 rounded-2xl" />;

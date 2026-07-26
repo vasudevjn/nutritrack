@@ -1,12 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Plus } from "lucide-react";
 import { MealList } from "@/components/meals/meal-list";
+import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QueryError } from "@/components/ui/query-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDisplayDate, todayISO } from "@/lib/dates";
+import { cn } from "@/lib/utils";
 import type { Meal } from "@/types/database";
 
 async function fetchMeals(date: string) {
@@ -23,7 +28,7 @@ export function HistoryView() {
   const searchParams = useSearchParams();
   const date = searchParams.get("date") || todayISO();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["meals", date],
     queryFn: () => fetchMeals(date),
   });
@@ -35,19 +40,31 @@ export function HistoryView() {
           <h1 className="font-heading text-3xl tracking-tight">History</h1>
           <p className="mt-1 text-muted-foreground">{formatDisplayDate(date)}</p>
         </div>
-        <div className="space-y-1">
-          <Label htmlFor="history-date">Date</Label>
-          <Input
-            id="history-date"
-            type="date"
-            value={date}
-            onChange={(e) => router.push(`/history?date=${e.target.value}`)}
-            className="w-44"
-          />
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label htmlFor="history-date">Date</Label>
+            <Input
+              id="history-date"
+              type="date"
+              value={date}
+              max={todayISO()}
+              onChange={(e) => router.push(`/history?date=${e.target.value}`)}
+              className="w-44"
+            />
+          </div>
+          <Link
+            href={`/log?date=${date}`}
+            className={cn(buttonVariants(), "inline-flex gap-1.5")}
+          >
+            <Plus className="size-4" />
+            Log for day
+          </Link>
         </div>
       </header>
 
-      {isLoading || !data ? (
+      {isError ? (
+        <QueryError message="Could not load this day's meals" onRetry={() => void refetch()} />
+      ) : isLoading || !data ? (
         <Skeleton className="h-40 rounded-2xl" />
       ) : (
         <>

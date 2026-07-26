@@ -1,10 +1,20 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { sumMacros } from "@/lib/nutrition";
 import type { ParsedMealItem } from "@/types/database";
+
+const emptyItem = (): ParsedMealItem => ({
+  name: "",
+  quantity: 1,
+  unit: "serving",
+  calories: 0,
+  protein_g: 0,
+  carbs_g: 0,
+  fat_g: 0,
+});
 
 export function NutritionPreview({
   items,
@@ -49,18 +59,19 @@ export function NutritionPreview({
           <tbody>
             {items.map((item, index) => (
               <tr
-                key={`${item.name}-${index}`}
+                key={`item-${index}`}
                 className="animate-row-in border-b border-border/60 last:border-0"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 <td className="px-2 py-2">
                   <Input
                     value={item.name}
+                    placeholder="Food name"
                     onChange={(e) => update(index, "name", e.target.value)}
                     className="h-8"
                   />
                 </td>
-                <td className="px-2 py-2 w-20">
+                <td className="w-20 px-2 py-2">
                   <Input
                     type="number"
                     value={item.quantity}
@@ -68,14 +79,14 @@ export function NutritionPreview({
                     className="h-8"
                   />
                 </td>
-                <td className="px-2 py-2 w-24">
+                <td className="w-24 px-2 py-2">
                   <Input
                     value={item.unit}
                     onChange={(e) => update(index, "unit", e.target.value)}
                     className="h-8"
                   />
                 </td>
-                <td className="px-2 py-2 w-20">
+                <td className="w-20 px-2 py-2">
                   <Input
                     type="number"
                     value={item.calories}
@@ -83,7 +94,7 @@ export function NutritionPreview({
                     className="h-8"
                   />
                 </td>
-                <td className="px-2 py-2 w-20">
+                <td className="w-20 px-2 py-2">
                   <Input
                     type="number"
                     value={item.protein_g}
@@ -91,7 +102,7 @@ export function NutritionPreview({
                     className="h-8"
                   />
                 </td>
-                <td className="px-2 py-2 w-20">
+                <td className="w-20 px-2 py-2">
                   <Input
                     type="number"
                     value={item.carbs_g}
@@ -99,7 +110,7 @@ export function NutritionPreview({
                     className="h-8"
                   />
                 </td>
-                <td className="px-2 py-2 w-20">
+                <td className="w-20 px-2 py-2">
                   <Input
                     type="number"
                     value={item.fat_g}
@@ -123,11 +134,24 @@ export function NutritionPreview({
           </tbody>
         </table>
       </div>
-      <div className="rounded-xl bg-secondary/70 px-4 py-3 text-sm tabular-nums">
-        <span className="font-medium">Totals:</span> {totals.calories} kcal · Protein{" "}
-        {Math.round(totals.protein_g)}g · Carbs {Math.round(totals.carbs_g)}g · Fat{" "}
-        {Math.round(totals.fat_g)}g
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => onChange([...items, emptyItem()])}
+        >
+          <Plus className="size-4" />
+          Add item
+        </Button>
+        <div className="rounded-xl bg-secondary/70 px-4 py-2 text-sm tabular-nums">
+          <span className="font-medium">Totals:</span> {totals.calories} kcal · Protein{" "}
+          {Math.round(totals.protein_g)}g · Carbs {Math.round(totals.carbs_g)}g · Fat{" "}
+          {Math.round(totals.fat_g)}g
+        </div>
       </div>
     </div>
   );
 }
+
+export { emptyItem };

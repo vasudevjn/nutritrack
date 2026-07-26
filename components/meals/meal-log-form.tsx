@@ -1,11 +1,12 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { NutritionPreview } from "@/components/meals/nutrition-preview";
+import { emptyItem, NutritionPreview } from "@/components/meals/nutrition-preview";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -18,10 +19,14 @@ import {
 import { todayISO } from "@/lib/dates";
 import type { MealType, ParsedMealItem } from "@/types/database";
 
-export function MealLogForm() {
+function MealLogFormInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const qc = useQueryClient();
+  const initialDate = searchParams.get("date") || todayISO();
+
   const [text, setText] = useState("");
+  const [loggedOn, setLoggedOn] = useState(initialDate);
   const [mealType, setMealType] = useState<MealType>("lunch");
   const [items, setItems] = useState<ParsedMealItem[] | null>(null);
 
@@ -40,20 +45,40 @@ export function MealLogForm() {
       setItems(data.items);
       toast.success("Review the estimates, then save");
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => {
+      toast.error(`${e.message}. You can enter nutrition manually.`);
+      setItems((prev) =>
+        prev?.length
+          ? prev
+          : [
+              {
+                name: text.trim() || "Meal item",
+                quantity: 1,
+                unit: "serving",
+                calories: 0,
+                protein_g: 0,
+                carbs_g: 0,
+                fat_g: 0,
+              },
+            ],
+      );
+    },
   });
 
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!items?.length) throw new Error("Nothing to save");
+      const cleaned = items.filter((i) => i.name.trim());
+      if (!cleaned.length) throw new Error("Add at least one named food item");
+
       const res = await fetch("/api/meals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           meal_type: mealType,
-          raw_input: text,
-          logged_on: todayISO(),
-          items,
+          raw_input: text || null,
+          logged_on: loggedOn,
+          items: cleaned,
         }),
       });
       const data = await res.json();
@@ -61,13 +86,18 @@ export function MealLogForm() {
       return data;
     },
     onSuccess: () => {
-      const date = todayISO();
-      qc.invalidateQueries({ queryKey: ["meals", date] });
+      qc.invalidateQueries({ queryKey: ["meals", loggedOn] });
+      qc.invalidateQueries({ queryKey: ["analytics"] });
       toast.success("Meal saved");
-      router.push("/dashboard");
+      router.push(loggedOn === todayISO() ? "/dashboard" : `/history?date=${loggedOn}`);
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
+  function startManual() {
+    setItems([emptyItem()]);
+    toast.message("Enter nutrition manually, then save");
+  }
 
   return (
     <div className="space-y-6">
@@ -82,42 +112,59 @@ export function MealLogForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label>Meal type</Label>
-        <Select value={mealType} onValueChange={(v) => setMealType(v as MealType)}>
-          <SelectTrigger className="w-full sm:w-56">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="breakfast">Breakfast</SelectItem>
-            <SelectItem value="lunch">Lunch</SelectItem>
-            <SelectItem value="dinner">Dinner</SelectItem>
-            <SelectItem value="snack">Snack</SelectItem>
-          </SelectContent>
-        </Select>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Meal type</Label>
+          <Select value={mealType} onValueChange={(v) => setMealType((v as MealType) || "lunch")}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="breakfast">Breakfast</SelectItem>
+              <SelectItem value="lunch">Lunch</SelectItem>
+              <SelectItem value="dinner">Dinner</SelectItem>
+              <SelectItem value="snack">Snack</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="logged-on">Date</Label>
+          <Input
+            id="logged-on"
+            type="date"
+            value={loggedOn}
+            max={todayISO()}
+            onChange={(e) => setLoggedOn(e.target.value)}
+          />
+        </div>
       </div>
 
-      <Button
-        type="button"
-        onClick={() => parseMutation.mutate()}
-        disabled={text.trim().length < 2 || parseMutation.isPending}
-      >
-        {parseMutation.isPending ? "Estimating…" : "Estimate with AI"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          type="button"
+          onClick={() => parseMutation.mutate()}
+          disabled={text.trim().length < 2 || parseMutation.isPending}
+        >
+          {parseMutation.isPending ? "Estimating…" : "Estimate with AI"}
+        </Button>
+        <Button type="button" variant="secondary" onClick={startManual}>
+          Enter manually
+        </Button>
+      </div>
 
       {items && (
         <div className="space-y-4">
           <div>
             <h2 className="font-heading text-xl">Nutrition preview</h2>
             <p className="text-sm text-muted-foreground">
-              Edit any values before saving to your day.
+              Edit any values before saving.
             </p>
           </div>
           <NutritionPreview items={items} onChange={setItems} />
           <Button
             type="button"
             className="w-full sm:w-auto"
-            disabled={!items.length || saveMutation.isPending}
+            disabled={!items.some((i) => i.name.trim()) || saveMutation.isPending}
             onClick={() => saveMutation.mutate()}
           >
             {saveMutation.isPending ? "Saving…" : "Save meal"}
@@ -125,5 +172,13 @@ export function MealLogForm() {
         </div>
       )}
     </div>
+  );
+}
+
+export function MealLogForm() {
+  return (
+    <Suspense fallback={<div className="text-sm text-muted-foreground">Loading…</div>}>
+      <MealLogFormInner />
+    </Suspense>
   );
 }

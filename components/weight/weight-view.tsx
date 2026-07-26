@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { QueryError } from "@/components/ui/query-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { todayISO } from "@/lib/dates";
 import type { WeightLog } from "@/types/database";
@@ -27,9 +28,13 @@ async function fetchWeight() {
 
 export function WeightView() {
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({ queryKey: ["weight"], queryFn: fetchWeight });
+  const { data, isLoading, isError, refetch } = useQuery({
+    queryKey: ["weight"],
+    queryFn: fetchWeight,
+  });
   const [weight, setWeight] = useState("");
   const [note, setNote] = useState("");
+  const [loggedOn, setLoggedOn] = useState(todayISO());
 
   const add = useMutation({
     mutationFn: async () => {
@@ -39,7 +44,7 @@ export function WeightView() {
         body: JSON.stringify({
           weight_kg: Number(weight),
           note: note || null,
-          logged_on: todayISO(),
+          logged_on: loggedOn,
         }),
       });
       const json = await res.json();
@@ -66,6 +71,7 @@ export function WeightView() {
       qc.invalidateQueries({ queryKey: ["analytics"] });
       toast.success("Entry deleted");
     },
+    onError: () => toast.error("Could not delete entry"),
   });
 
   const chartData = [...(data?.logs || [])]
@@ -78,7 +84,7 @@ export function WeightView() {
   return (
     <div className="space-y-6">
       <form
-        className="grid max-w-lg gap-3 rounded-2xl border border-border/80 bg-card/70 p-5 backdrop-blur-sm sm:grid-cols-[1fr_1fr_auto]"
+        className="grid max-w-xl gap-3 rounded-2xl border border-border/80 bg-card/70 p-5 backdrop-blur-sm sm:grid-cols-2"
         onSubmit={(e) => {
           e.preventDefault();
           add.mutate();
@@ -96,6 +102,16 @@ export function WeightView() {
           />
         </div>
         <div className="space-y-2">
+          <Label htmlFor="logged-on">Date</Label>
+          <Input
+            id="logged-on"
+            type="date"
+            max={todayISO()}
+            value={loggedOn}
+            onChange={(e) => setLoggedOn(e.target.value)}
+          />
+        </div>
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="note">Note</Label>
           <Input
             id="note"
@@ -104,18 +120,18 @@ export function WeightView() {
             placeholder="Optional"
           />
         </div>
-        <div className="flex items-end">
-          <Button type="submit" disabled={add.isPending} className="w-full">
-            {add.isPending ? "Saving…" : "Log"}
-          </Button>
-        </div>
+        <Button type="submit" disabled={add.isPending} className="sm:col-span-2">
+          {add.isPending ? "Saving…" : "Log weight"}
+        </Button>
       </form>
 
-      {isLoading ? (
+      {isError ? (
+        <QueryError message="Could not load weight history" onRetry={() => void refetch()} />
+      ) : isLoading ? (
         <Skeleton className="h-56 rounded-2xl" />
       ) : (
         <>
-          {chartData.length > 1 && (
+          {chartData.length > 1 ? (
             <div className="h-56 rounded-2xl border border-border/80 bg-card/70 p-4 backdrop-blur-sm">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData}>
@@ -132,6 +148,10 @@ export function WeightView() {
                 </LineChart>
               </ResponsiveContainer>
             </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Log at least two weigh-ins to see a trend chart.
+            </p>
           )}
 
           <div className="space-y-2">

@@ -44,3 +44,32 @@ export async function POST(request: Request) {
   if (error) return jsonError(error.message, 500);
   return NextResponse.json({ log: data }, { status: 201 });
 }
+
+export async function DELETE(request: Request) {
+  const { supabase, user, errorResponse } = await requireUser();
+  if (errorResponse || !user) return errorResponse!;
+
+  const { searchParams } = new URL(request.url);
+  const date = searchParams.get("date") || todayISO();
+
+  const { data: latest, error: findError } = await supabase
+    .from("water_logs")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("logged_on", date)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) return jsonError(findError.message, 500);
+  if (!latest) return jsonError("No water logs to undo", 404);
+
+  const { error } = await supabase
+    .from("water_logs")
+    .delete()
+    .eq("id", latest.id)
+    .eq("user_id", user.id);
+
+  if (error) return jsonError(error.message, 500);
+  return NextResponse.json({ ok: true });
+}
