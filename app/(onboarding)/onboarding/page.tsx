@@ -204,10 +204,14 @@ export default function OnboardingPage() {
             maintenance={suggested.maintenance_calories}
             dailyDelta={suggested.daily_calorie_delta}
             calorieTarget={calorieTarget}
+            minCalories={suggested.min_calories}
+            clamped={suggested.clamped}
+            effectiveWeeklyKg={suggested.effective_weekly_kg}
             onGoalTypeChange={(type) => {
               setManualCalories(false);
               setGoalType(type);
-              if (type !== "maintenance" && weeklyKg <= 0) setWeeklyKg(0.5);
+              if (type === "deficit" && weeklyKg > 0.75) setWeeklyKg(0.5);
+              else if (type !== "maintenance" && weeklyKg <= 0) setWeeklyKg(0.5);
             }}
             onWeeklyKgChange={(kg) => {
               setManualCalories(false);

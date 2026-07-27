@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ageFromBirthdate,
   applyCaloriePlan,
+  estimateBmr,
   macrosFromCalories,
   maintenanceCalories,
 } from "@/lib/nutrition";
@@ -58,18 +59,25 @@ export function GoalsForm() {
 
   const profile = profileQuery.data?.profile;
 
-  const maintenance = useMemo(() => {
+  const biometrics = useMemo(() => {
     if (!profile?.sex || !profile.height_cm || !profile.birthdate || !profile.activity_level) {
-      return calorieTarget;
+      return null;
     }
-    return maintenanceCalories({
+    const input = {
       sex: profile.sex,
       weightKg: currentWeight,
       heightCm: Number(profile.height_cm),
       age: ageFromBirthdate(profile.birthdate),
       activityLevel: Number(profile.activity_level),
-    });
-  }, [profile, currentWeight, calorieTarget]);
+    };
+    return {
+      sex: profile.sex,
+      bmr: estimateBmr(input),
+      maintenance: maintenanceCalories(input),
+    };
+  }, [profile, currentWeight]);
+
+  const maintenance = biometrics?.maintenance ?? calorieTarget;
 
   const plan = useMemo(
     () =>
@@ -77,15 +85,20 @@ export function GoalsForm() {
         maintenance,
         goalType,
         weeklyWeightChangeKg: weeklyKg,
+        sex: biometrics?.sex,
+        bmr: biometrics?.bmr,
       }),
-    [maintenance, goalType, weeklyKg],
+    [maintenance, goalType, weeklyKg, biometrics?.sex, biometrics?.bmr],
   );
 
   useEffect(() => {
     const g = goalsQuery.data?.goals;
     if (!g) return;
     setGoalType(g.calorie_goal_type || "maintenance");
-    setWeeklyKg(Number(g.weekly_weight_change_kg || 0.5) || 0.5);
+    const savedWeekly = Number(g.weekly_weight_change_kg || 0.5) || 0.5;
+    setWeeklyKg(
+      g.calorie_goal_type === "deficit" ? Math.min(savedWeekly, 0.75) : savedWeekly,
+    );
     setCalorieTarget(g.calorie_target);
     setProteinG(g.protein_g);
     setCarbsG(g.carbs_g);
@@ -163,10 +176,14 @@ export function GoalsForm() {
         maintenance={plan.maintenance}
         dailyDelta={plan.daily_delta}
         calorieTarget={calorieTarget}
+        minCalories={plan.min_calories}
+        clamped={plan.clamped}
+        effectiveWeeklyKg={plan.effective_weekly_kg}
         onGoalTypeChange={(type) => {
           setManualCalories(false);
           setGoalType(type);
-          if (type !== "maintenance" && weeklyKg <= 0) setWeeklyKg(0.5);
+          if (type === "deficit" && weeklyKg > 0.75) setWeeklyKg(0.5);
+          else if (type !== "maintenance" && weeklyKg <= 0) setWeeklyKg(0.5);
         }}
         onWeeklyKgChange={(kg) => {
           setManualCalories(false);

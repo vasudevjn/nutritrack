@@ -16,7 +16,7 @@ export const onboardingSchema = z.object({
   weight_kg: z.coerce.number().min(30).max(300),
   birthdate: z.string().min(1),
   activity_level: z.coerce.number().min(1.2).max(1.9),
-  calorie_target: z.coerce.number().min(800).max(6000),
+  calorie_target: z.coerce.number().min(1200).max(6000),
   protein_g: z.coerce.number().min(20).max(400),
   carbs_g: z.coerce.number().min(20).max(800),
   fat_g: z.coerce.number().min(10).max(400),
@@ -26,7 +26,7 @@ export const onboardingSchema = z.object({
 });
 
 export const goalsSchema = z.object({
-  calorie_target: z.coerce.number().min(800).max(6000),
+  calorie_target: z.coerce.number().min(1200).max(6000),
   protein_g: z.coerce.number().min(20).max(400),
   carbs_g: z.coerce.number().min(20).max(800),
   fat_g: z.coerce.number().min(10).max(400),
